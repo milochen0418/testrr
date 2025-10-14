@@ -63,6 +63,7 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -74,10 +75,20 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.google.android.material.slider.Slider;
 import com.google.android.material.switchmaterial.SwitchMaterial;
 
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Objects;
 import java.util.UUID;
+
+import android.graphics.Bitmap;
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.WriterException;
+import com.journeyapps.barcodescanner.BarcodeEncoder;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -88,6 +99,9 @@ public class MainActivity extends AppCompatActivity {
 
     private Button mButtonToggle;
     private TextView mAddress;
+    private TextView mCurrentIpTextView;
+    private TextView mQrCodeTitleTextView;
+    private ImageView mQrCodeImageView;
     private boolean mIsMainServiceRunning;
     private BroadcastReceiver mMainServiceBroadcastReceiver;
     private AlertDialog mOutgoingConnectionWaitDialog;
@@ -156,6 +170,14 @@ public class MainActivity extends AppCompatActivity {
         });
 
         mAddress = findViewById(R.id.address);
+        
+        // Initialize IP and QR Code views
+        mCurrentIpTextView = findViewById(R.id.current_ip);
+        mQrCodeTitleTextView = findViewById(R.id.qr_code_title);
+        mQrCodeImageView = findViewById(R.id.qr_code_image);
+        
+        // Initialize IP display and QR Code
+        updateIpAddressAndQrCode();
 
         Button reverseVNC = findViewById(R.id.reverse_vnc);
         reverseVNC.setOnClickListener(view -> {
@@ -652,20 +674,19 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onAvailable(@NonNull Network network) {
                 Log.d(TAG, "NetworkCallback onAvailable");
-                updateAddressesDisplay();
+                safeUpdateAddressesDisplay();
             }
 
             @Override
             public void onLinkPropertiesChanged(@NonNull Network network, @NonNull LinkProperties linkProperties) {
                 Log.d(TAG, "NetworkCallback onLinkPropertiesChanged");
-                updateAddressesDisplay();
+                safeUpdateAddressesDisplay();
             }
-
 
             @Override
             public void onLost(@NonNull Network network) {
                 Log.d(TAG, "NetworkCallback onLost");
-                updateAddressesDisplay();
+                safeUpdateAddressesDisplay();
             }
         };
         ((ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE)).registerNetworkCallback(
@@ -676,7 +697,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onReceive(Context context, Intent intent) {
                 Log.d(TAG, "WIFI_AP_STATE_CHANGED");
-                updateAddressesDisplay();
+                safeUpdateAddressesDisplay();
             }
         };
         ContextCompat.registerReceiver(
@@ -716,6 +737,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+
         if (MainService.isServerActive()) {
             startGettingClientList();
         }
@@ -831,8 +853,37 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    /**
+     * Safe wrapper for updateAddressesDisplay that handles exceptions and checks Activity state
+     */
+    private void safeUpdateAddressesDisplay() {
+        try {
+            // Check if Activity is still valid
+            if (isFinishing() || isDestroyed()) {
+                Log.d(TAG, "Activity is finishing/destroyed, skipping address display update");
+                return;
+            }
+            
+            // Execute on main thread to ensure UI updates are safe
+            runOnUiThread(() -> {
+                try {
+                    if (!isFinishing() && !isDestroyed()) {
+                        updateAddressesDisplay();
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "Error in updateAddressesDisplay", e);
+                }
+            });
+        } catch (Exception e) {
+            Log.e(TAG, "Error in safeUpdateAddressesDisplay", e);
+        }
+    }
+
     private void updateAddressesDisplay() {
         Log.d(TAG, "updateAddressesDisplay: " + MainService.isServerActive());
+
+        // Always update IP address and QR code regardless of server state
+        updateIpAddressAndQrCode();
 
         if(!MainService.isServerActive()) {
             mAddress.setVisibility(View.GONE);
@@ -889,9 +940,40 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         Log.d(TAG, "onDestroy");
-        unregisterReceiver(mMainServiceBroadcastReceiver);
-        ((ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE)).unregisterNetworkCallback(mNetworkCallback);
-        unregisterReceiver(mWifiApStateChangedReceiver);
+        
+        // Safely unregister receivers with proper exception handling
+        try {
+            if (mMainServiceBroadcastReceiver != null) {
+                unregisterReceiver(mMainServiceBroadcastReceiver);
+            }
+        } catch (IllegalArgumentException e) {
+            Log.w(TAG, "mMainServiceBroadcastReceiver was not registered", e);
+        } catch (Exception e) {
+            Log.e(TAG, "Error unregistering mMainServiceBroadcastReceiver", e);
+        }
+        
+        try {
+            if (mNetworkCallback != null) {
+                ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+                if (connectivityManager != null) {
+                    connectivityManager.unregisterNetworkCallback(mNetworkCallback);
+                }
+            }
+        } catch (IllegalArgumentException e) {
+            Log.w(TAG, "mNetworkCallback was not registered", e);
+        } catch (Exception e) {
+            Log.e(TAG, "Error unregistering mNetworkCallback", e);
+        }
+        
+        try {
+            if (mWifiApStateChangedReceiver != null) {
+                unregisterReceiver(mWifiApStateChangedReceiver);
+            }
+        } catch (IllegalArgumentException e) {
+            Log.w(TAG, "mWifiApStateChangedReceiver was not registered", e);
+        } catch (Exception e) {
+            Log.e(TAG, "Error unregistering mWifiApStateChangedReceiver", e);
+        }
     }
 
     private void onServerStarted() {
@@ -902,7 +984,7 @@ public class MainActivity extends AppCompatActivity {
             mButtonToggle.requestFocus();
         });
 
-        updateAddressesDisplay();
+        safeUpdateAddressesDisplay();
 
         // show outbound connection interface
         findViewById(R.id.outbound_text).setVisibility(View.VISIBLE);
@@ -930,7 +1012,7 @@ public class MainActivity extends AppCompatActivity {
             mButtonToggle.requestFocus();
         });
 
-        updateAddressesDisplay();
+        safeUpdateAddressesDisplay();
 
         // hide outbound connection interface
         findViewById(R.id.outbound_text).setVisibility(View.GONE);
@@ -991,6 +1073,177 @@ public class MainActivity extends AppCompatActivity {
             unregisterReceiver(mClientListBroadcastReceiver);
         } catch (IllegalArgumentException unused) {
             // not registered
+        }
+    }
+
+    /**
+     * Get the current WiFi IP address of the device
+     */
+    private String getCurrentIpAddress() {
+        try {
+            Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
+            if (networkInterfaces == null) {
+                Log.w(TAG, "No network interfaces available");
+                return "No IP Address Found";
+            }
+            
+            while (networkInterfaces.hasMoreElements()) {
+                NetworkInterface networkInterface = networkInterfaces.nextElement();
+                if (networkInterface == null) {
+                    continue;
+                }
+                
+                try {
+                    Enumeration<InetAddress> inetAddresses = networkInterface.getInetAddresses();
+                    if (inetAddresses == null) {
+                        continue;
+                    }
+                    
+                    while (inetAddresses.hasMoreElements()) {
+                        InetAddress inetAddress = inetAddresses.nextElement();
+                        if (inetAddress == null) {
+                            continue;
+                        }
+                        
+                        // Skip loopback addresses and IPv6 addresses
+                        if (inetAddress.isLoopbackAddress() || inetAddress.getHostAddress().contains(":")) {
+                            continue;
+                        }
+                        
+                        String ip = inetAddress.getHostAddress();
+                        if (ip != null && !ip.isEmpty()) {
+                            // Check if it's a valid private IP address
+                            if (ip.startsWith("192.168.") || ip.startsWith("10.") || 
+                                (ip.startsWith("172.") && ip.length() >= 8)) {
+                                Log.d(TAG, "Found valid IP address: " + ip);
+                                return ip;
+                            }
+                        }
+                    }
+                } catch (Exception ex) {
+                    Log.w(TAG, "Error processing network interface: " + networkInterface.getName(), ex);
+                }
+            }
+        } catch (SocketException ex) {
+            Log.e(TAG, "Error getting network interfaces", ex);
+        } catch (Exception ex) {
+            Log.e(TAG, "Unexpected error getting IP address", ex);
+        }
+        
+        Log.d(TAG, "No valid IP address found");
+        return "No IP Address Found";
+    }
+
+    /**
+     * Generate QR code bitmap from text
+     */
+    private Bitmap generateQrCode(String text) {
+        try {
+            BarcodeEncoder barcodeEncoder = new BarcodeEncoder();
+            Bitmap bitmap = barcodeEncoder.encodeBitmap(text, BarcodeFormat.QR_CODE, 400, 400);
+            return bitmap;
+        } catch (WriterException e) {
+            Log.e(TAG, "Error generating QR code", e);
+            return null;
+        }
+    }
+
+    /**
+     * Update IP address display and QR code
+     */
+    private void updateIpAddressAndQrCode() {
+        // Check if Activity is still valid before updating UI
+        if (isFinishing() || isDestroyed()) {
+            Log.d(TAG, "Activity is finishing/destroyed, skipping IP/QR update");
+            return;
+        }
+        
+        try {
+            String currentIp = getCurrentIpAddress();
+            final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+            int port = prefs.getInt(Constants.PREFS_KEY_SETTINGS_PORT, mDefaults.getPort());
+            
+            // Ensure UI updates happen on the main thread
+            runOnUiThread(() -> {
+                try {
+                    // Check again if Activity is still valid
+                    if (isFinishing() || isDestroyed()) {
+                        return;
+                    }
+                    
+                    // Display IP address
+                    if (mCurrentIpTextView != null) {
+                        mCurrentIpTextView.setText(currentIp);
+                    }
+                    
+                    // Check if we have a valid IP address
+                    if (currentIp.equals("No IP Address Found")) {
+                        // Hide QR code and title when no IP is found
+                        if (mQrCodeTitleTextView != null) {
+                            mQrCodeTitleTextView.setVisibility(View.GONE);
+                        }
+                        if (mQrCodeImageView != null) {
+                            mQrCodeImageView.setVisibility(View.GONE);
+                        }
+                        Log.d(TAG, "No IP address found, hiding QR code");
+                        return;
+                    }
+                    
+                    // Show QR code and title when we have a valid IP
+                    if (mQrCodeTitleTextView != null) {
+                        mQrCodeTitleTextView.setVisibility(View.VISIBLE);
+                    }
+                    if (mQrCodeImageView != null) {
+                        mQrCodeImageView.setVisibility(View.VISIBLE);
+                    }
+                    
+                    // Generate connection string for QR code
+                    String connectionString;
+                    if (port > 0) {
+                        connectionString = currentIp + ":" + port;
+                    } else {
+                        connectionString = currentIp;
+                    }
+                    
+                    // Generate and display QR code in background thread
+                    new Thread(() -> {
+                        try {
+                            Bitmap qrBitmap = generateQrCode(connectionString);
+                            
+                            // Update UI on main thread
+                            runOnUiThread(() -> {
+                                try {
+                                    if (isFinishing() || isDestroyed() || mQrCodeImageView == null) {
+                                        return;
+                                    }
+                                    
+                                    if (qrBitmap != null) {
+                                        mQrCodeImageView.setImageBitmap(qrBitmap);
+                                        Log.d(TAG, "Updated QR code for: " + connectionString);
+                                    } else {
+                                        // If QR code generation fails, hide the QR code and title
+                                        if (mQrCodeTitleTextView != null) {
+                                            mQrCodeTitleTextView.setVisibility(View.GONE);
+                                        }
+                                        mQrCodeImageView.setVisibility(View.GONE);
+                                        Log.w(TAG, "Failed to generate QR code for: " + connectionString);
+                                    }
+                                } catch (Exception e) {
+                                    Log.e(TAG, "Error updating QR code UI", e);
+                                }
+                            });
+                        } catch (Exception e) {
+                            Log.e(TAG, "Error generating QR code", e);
+                        }
+                    }).start();
+                    
+                    Log.d(TAG, "Updated IP address: " + currentIp);
+                } catch (Exception e) {
+                    Log.e(TAG, "Error updating IP/QR UI", e);
+                }
+            });
+        } catch (Exception e) {
+            Log.e(TAG, "Error in updateIpAddressAndQrCode", e);
         }
     }
 
