@@ -887,10 +887,12 @@ public class MainActivity extends AppCompatActivity {
 
         if(!MainService.isServerActive()) {
             mAddress.setVisibility(View.GONE);
+            
             return;
         }
 
-        mAddress.setVisibility(View.VISIBLE);
+        //mAddress.setVisibility(View.VISIBLE);
+        mAddress.setVisibility(View.GONE); // temporarily hide address display, QR code is more important
 
         if(MainService.getPort() >= 0) {
             HashMap<ClickableSpan, Pair<Integer,Integer>> spans = new HashMap<>();
@@ -987,8 +989,12 @@ public class MainActivity extends AppCompatActivity {
         safeUpdateAddressesDisplay();
 
         // show outbound connection interface
-        findViewById(R.id.outbound_text).setVisibility(View.VISIBLE);
-        findViewById(R.id.outbound_buttons).setVisibility(View.VISIBLE);
+        //findViewById(R.id.outbound_text).setVisibility(View.VISIBLE);
+        //findViewById(R.id.outbound_buttons).setVisibility(View.VISIBLE);
+
+        findViewById(R.id.outbound_text).setVisibility(View.GONE);
+        findViewById(R.id.outbound_buttons).setVisibility(View.GONE);
+
 
         // indicate that changing these settings does not have an effect when the server is running
         findViewById(R.id.settings_port).setEnabled(false);
