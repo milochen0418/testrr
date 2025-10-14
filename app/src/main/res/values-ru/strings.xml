@@ -42,10 +42,14 @@
     <string name="main_activity_survey_button">Оставить отзыв</string>
     <plurals name="main_service_notification_text_not_listening">
         <item quantity="one">Не прослушивается входящие соединения, подключён %1$d клиент</item>
+        <item quantity="few">Не прослушивается входящие соединения, подключено %1$d клиента</item>
+        <item quantity="many">Не прослушивается входящие соединения, подключено %1$d клиентов</item>
         <item quantity="other">Не прослушивается входящие соединения, подключено %1$d клиентов</item>
     </plurals>
     <plurals name="main_service_notification_text_listening">
         <item quantity="one">Прослушивается входящие соединения, подключён %1$d клиент</item>
+        <item quantity="few">Прослушивается входящие соединения, подключено %1$d клиента</item>
+        <item quantity="many">Прослушивается входящие соединения, подключено %1$d клиентов</item>
         <item quantity="other">Прослушивается входящие соединения, подключено %1$d клиентов</item>
     </plurals>
     <string name="main_service_notification_title_fallback_screen_capture">Активирован режим медленного резервного захвата экрана</string>

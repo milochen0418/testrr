@@ -5,7 +5,7 @@ were not changed by the user.
 
 ## Via JSON File
 A file named `defaults.json` needs to created under
-`<external files directory>/Android/data/net.christianbeier.droidvnc_ng/files/` where
+`<external files directory>/Android/data/com.auodplus.satis.fly/files/` where
 depending on your device, `<external files directory>` is something like `/storage/emulated/0` if
 the device shows two external storages or simply `/sdcard` if the device has one external storage.
 

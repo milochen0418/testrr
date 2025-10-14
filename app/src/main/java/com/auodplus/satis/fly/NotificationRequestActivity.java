@@ -1,5 +1,5 @@
 
-package net.christianbeier.droidvnc_ng;
+package com.auodplus.satis.fly;
 
 import android.Manifest;
 import android.app.AlertDialog;

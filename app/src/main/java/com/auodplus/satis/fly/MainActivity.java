@@ -19,7 +19,7 @@
  * 59 Temple Place Suite 330, Boston, MA 02111-1307, USA.
  */
 
-package net.christianbeier.droidvnc_ng;
+package com.auodplus.satis.fly;
 
 import android.Manifest;
 import android.content.BroadcastReceiver;
@@ -662,7 +662,7 @@ public class MainActivity extends AppCompatActivity {
         filter.addAction(MainService.ACTION_CONNECT_REPEATER);
         // register the receiver as NOT_EXPORTED so it only receives broadcasts sent by MainService,
         // not a malicious fake broadcaster like
-        // `adb shell am broadcast -a net.christianbeier.droidvnc_ng.ACTION_STOP --ez net.christianbeier.droidvnc_ng.EXTRA_REQUEST_SUCCESS true`
+    // `adb shell am broadcast -a com.auodplus.satis.fly.ACTION_STOP --ez com.auodplus.satis.fly.EXTRA_REQUEST_SUCCESS true`
         // for instance
         ContextCompat.registerReceiver(this, mMainServiceBroadcastReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED);
 

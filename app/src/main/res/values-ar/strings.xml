@@ -41,12 +41,20 @@
     <string name="main_activity_about">هذا هو droidVNC-NG %1$s. يرجى ملاحظة أن المزيد من الميزات لا تزال تُضاف إلى droidVNC-NG. يمكنك الإبلاغ عن أي مشاكل وطلبات الميزات على https://github.com/bk138/droidVNC-NG/issues</string>
     <string name="main_activity_survey_button">قدم تعليقاتك</string>
     <plurals name="main_service_notification_text_not_listening">
+        <item quantity="zero">لا يستمع للاتصالات الواردة، عدد العملاء المتصلين: %1$d</item>
         <item quantity="one">لا يستمع للاتصالات الواردة، %1$d عميل متصل</item>
-        <item quantity="other">لا يستمع للاتصالات الواردة، %1$d عملاء متصلون</item>
+        <item quantity="two">لا يستمع للاتصالات الواردة، عدد العملاء المتصلين: %1$d</item>
+        <item quantity="few">لا يستمع للاتصالات الواردة، عدد العملاء المتصلين: %1$d</item>
+        <item quantity="many">لا يستمع للاتصالات الواردة، عدد العملاء المتصلين: %1$d</item>
+        <item quantity="other">لا يستمع للاتصالات الواردة، عدد العملاء المتصلين: %1$d</item>
     </plurals>
     <plurals name="main_service_notification_text_listening">
+        <item quantity="zero">يستمع للاتصالات الواردة، عدد العملاء المتصلين: %1$d</item>
         <item quantity="one">يستمع للاتصالات الواردة، %1$d عميل متصل</item>
-        <item quantity="other">يستمع للاتصالات الواردة، %1$d عملاء متصلون</item>
+        <item quantity="two">يستمع للاتصالات الواردة، عدد العملاء المتصلين: %1$d</item>
+        <item quantity="few">يستمع للاتصالات الواردة، عدد العملاء المتصلين: %1$d</item>
+        <item quantity="many">يستمع للاتصالات الواردة، عدد العملاء المتصلين: %1$d</item>
+        <item quantity="other">يستمع للاتصالات الواردة، عدد العملاء المتصلين: %1$d</item>
     </plurals>
     <string name="main_service_notification_title_fallback_screen_capture">وضع التقاط الشاشة الاحتياطي البطيء نشط</string>
     <string name="main_service_notification_action_fallback_screen_capture">الترقية إلى وضع التقاط الشاشة السريع</string>

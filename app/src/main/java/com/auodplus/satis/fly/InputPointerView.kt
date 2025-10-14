@@ -1,4 +1,4 @@
-package net.christianbeier.droidvnc_ng
+package com.auodplus.satis.fly
 
 import android.annotation.SuppressLint
 import android.content.Context

@@ -8,7 +8,7 @@ android {
     compileSdk 36
 
     defaultConfig {
-        applicationId "net.christianbeier.droidvnc_ng"
+    applicationId "com.auodplus.satis.fly"
         minSdk 24
         targetSdk 35
         versionCode 52
@@ -42,7 +42,7 @@ android {
             path 'src/main/cpp/CMakeLists.txt'
         }
     }
-    namespace 'net.christianbeier.droidvnc_ng'
+    namespace 'com.auodplus.satis.fly'
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_11

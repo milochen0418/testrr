@@ -9,11 +9,11 @@ is is called droidVNC-NG.
 If you have a general question, it's best to [ask in the community chat](https://gitter.im/droidVNC-NG/community). If your concern is about a bug or feature request instead, please use [the issue tracker](https://github.com/bk138/droidVNC-NG/issues).
 
 [<img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png"
-     alt="Get it on F-Droid"
-     height="80">](https://f-droid.org/packages/net.christianbeier.droidvnc_ng/)
+  alt="Get it on F-Droid"
+  height="80">](https://f-droid.org/packages/com.auodplus.satis.fly/)
 [<img src="https://play.google.com/intl/en_us/badges/images/generic/en-play-badge.png"
-     alt="Get it on Google Play"
-     height="80">](https://play.google.com/store/apps/details?id=net.christianbeier.droidvnc_ng)
+  alt="Get it on Google Play"
+  height="80">](https://play.google.com/store/apps/details?id=com.auodplus.satis.fly)
 
 ## Features
 
@@ -139,11 +139,11 @@ You can:
 the permission to access the screen contents has to be given on each start and is not saved. You can,
 however, work around this by installing [adb](https://developer.android.com/studio/command-line/adb)
 (or simply Android Studio) on a PC, connecting the device running droidVNC-NG to that PC and running
-`adb shell cmd appops set net.christianbeier.droidvnc_ng PROJECT_MEDIA allow` once. Alternatively, if
-using the intent interface, you can also start with `net.christianbeier.droidvnc_ng.EXTRA_FALLBACK_SCREEN_CAPTURE`
+`adb shell cmd appops set com.auodplus.satis.fly PROJECT_MEDIA allow` once. Alternatively, if
+using the intent interface, you can also start with `com.auodplus.satis.fly.EXTRA_FALLBACK_SCREEN_CAPTURE`
 set to true.
 
-* You can also use adb to manually give input permission prior to app start via `adb shell settings put secure enabled_accessibility_services net.christianbeier.droidvnc_ng/.InputService:$(adb shell settings get secure enabled_accessibility_services)`.
+* You can also use adb to manually give input permission prior to app start via `adb shell settings put secure enabled_accessibility_services com.auodplus.satis.fly/.InputService:$(adb shell settings get secure enabled_accessibility_services)`.
 
 * If you are getting a black screen in a connected VNC viewer despite having given all permissions, it
 might be that your device does not support Android's MediaProjection API correctly. To find out, you can

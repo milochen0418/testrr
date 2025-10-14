@@ -42,11 +42,15 @@
     <string name="main_activity_survey_button">Надати відгук</string>
     <plurals name="main_service_notification_text_not_listening">
         <item quantity="one">Не слухає вхідні з\'єднання, %1$d клієнт під\'єднано</item>
-        <item quantity="other">Не слухає вхідні з\'єднання, %1$d клієнти під\'єднано</item>
+        <item quantity="few">Не слухає вхідні з\'єднання, %1$d клієнти під\'єднано</item>
+        <item quantity="many">Не слухає вхідні з\'єднання, %1$d клієнтів під\'єднано</item>
+        <item quantity="other">Не слухає вхідні з\'єднання, %1$d клієнтів під\'єднано</item>
     </plurals>
     <plurals name="main_service_notification_text_listening">
         <item quantity="one">Слухає вхідні з\'єднання, %1$d клієнт під\'єднано</item>
-        <item quantity="other">Слухає вхідні з\'єднання, %1$d клієнти під\'єднано</item>
+        <item quantity="few">Слухає вхідні з\'єднання, %1$d клієнти під\'єднано</item>
+        <item quantity="many">Слухає вхідні з\'єднання, %1$d клієнтів під\'єднано</item>
+        <item quantity="other">Слухає вхідні з\'єднання, %1$d клієнтів під\'єднано</item>
     </plurals>
     <string name="main_service_notification_title_fallback_screen_capture">Активовано повільний резервний режим захоплення екрану</string>
     <string name="main_service_notification_action_fallback_screen_capture">Оновити до швидкого режиму захоплення екрану</string>

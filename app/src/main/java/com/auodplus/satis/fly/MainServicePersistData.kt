@@ -1,4 +1,4 @@
-package net.christianbeier.droidvnc_ng
+package com.auodplus.satis.fly
 
 import android.content.Context
 import android.content.Intent

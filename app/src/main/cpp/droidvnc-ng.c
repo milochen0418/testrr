@@ -237,8 +237,8 @@ JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void __unused * reserved) {
     */
     JNIEnv *env = NULL;
     (*theVM)->GetEnv(theVM, (void**) &env, JNI_VERSION_1_6); // this will always succeed in JNI_OnLoad()
-    theInputService = (*env)->NewGlobalRef(env, (*env)->FindClass(env, "net/christianbeier/droidvnc_ng/InputService"));
-    theMainService = (*env)->NewGlobalRef(env, (*env)->FindClass(env, "net/christianbeier/droidvnc_ng/MainService"));
+    theInputService = (*env)->NewGlobalRef(env, (*env)->FindClass(env, "com/auodplus/satis/fly/InputService"));
+    theMainService = (*env)->NewGlobalRef(env, (*env)->FindClass(env, "com/auodplus/satis/fly/MainService"));
 
     rfbLog = logcat_info;
     rfbErr = logcat_err;
@@ -248,7 +248,7 @@ JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void __unused * reserved) {
 }
 
 
-JNIEXPORT jboolean JNICALL Java_net_christianbeier_droidvnc_1ng_MainService_vncStopServer(__unused JNIEnv *env, __unused jobject thiz) {
+JNIEXPORT jboolean JNICALL Java_com_auodplus_satis_fly_MainService_vncStopServer(__unused JNIEnv *env, __unused jobject thiz) {
 
     if(!theScreen)
         return JNI_FALSE;
@@ -273,7 +273,7 @@ JNIEXPORT jboolean JNICALL Java_net_christianbeier_droidvnc_1ng_MainService_vncS
 }
 
 
-JNIEXPORT jboolean JNICALL Java_net_christianbeier_droidvnc_1ng_MainService_vncStartServer(JNIEnv *env, jobject thiz, jint width, jint height, jint port, jstring desktopname, jstring password, jstring httpRootDir) {
+JNIEXPORT jboolean JNICALL Java_com_auodplus_satis_fly_MainService_vncStartServer(JNIEnv *env, jobject thiz, jint width, jint height, jint port, jstring desktopname, jstring password, jstring httpRootDir) {
 
     int argc = 0;
 
@@ -291,7 +291,7 @@ JNIEXPORT jboolean JNICALL Java_net_christianbeier_droidvnc_1ng_MainService_vncS
     theScreen->frameBuffer=(char*)calloc(width * height * 4, 1);
     if(!theScreen->frameBuffer) {
         __android_log_print(ANDROID_LOG_ERROR, TAG, "vncStartServer: failed allocating framebuffer");
-        Java_net_christianbeier_droidvnc_1ng_MainService_vncStopServer(env, thiz);
+        Java_com_auodplus_satis_fly_MainService_vncStopServer(env, thiz);
         return JNI_FALSE;
     }
     theScreen->ptrAddEvent = onPointerEvent;
@@ -313,7 +313,7 @@ JNIEXPORT jboolean JNICALL Java_net_christianbeier_droidvnc_1ng_MainService_vncS
         if(!cDesktopName) {
             __android_log_print(ANDROID_LOG_ERROR, TAG, "vncStartServer: failed getting desktop name from JNI");
             theScreen->desktopName = strdup("Android"); // vncStopServer() must have something to correctly free()
-            Java_net_christianbeier_droidvnc_1ng_MainService_vncStopServer(env, thiz);
+            Java_com_auodplus_satis_fly_MainService_vncStopServer(env, thiz);
             return JNI_FALSE;
         }
         theScreen->desktopName = strdup(cDesktopName);
@@ -325,13 +325,13 @@ JNIEXPORT jboolean JNICALL Java_net_christianbeier_droidvnc_1ng_MainService_vncS
         char **passwordList = malloc(sizeof(char **) * 2);
         if(!passwordList) {
             __android_log_print(ANDROID_LOG_ERROR, TAG, "vncStartServer: failed allocating password list");
-            Java_net_christianbeier_droidvnc_1ng_MainService_vncStopServer(env, thiz);
+            Java_com_auodplus_satis_fly_MainService_vncStopServer(env, thiz);
             return JNI_FALSE;
         }
         const char *cPassword = (*env)->GetStringUTFChars(env, password, NULL);
         if(!cPassword) {
             __android_log_print(ANDROID_LOG_ERROR, TAG, "vncStartServer: failed getting password from JNI");
-            Java_net_christianbeier_droidvnc_1ng_MainService_vncStopServer(env, thiz);
+            Java_com_auodplus_satis_fly_MainService_vncStopServer(env, thiz);
             return JNI_FALSE;
         }
         passwordList[0] = strdup(cPassword);
@@ -345,7 +345,7 @@ JNIEXPORT jboolean JNICALL Java_net_christianbeier_droidvnc_1ng_MainService_vncS
         const char *cHttpRootDir = (*env)->GetStringUTFChars(env, httpRootDir, NULL);
         if(!cHttpRootDir) {
             __android_log_print(ANDROID_LOG_ERROR, TAG, "vncStartServer: failed getting http root dir from JNI");
-            Java_net_christianbeier_droidvnc_1ng_MainService_vncStopServer(env, thiz);
+            Java_com_auodplus_satis_fly_MainService_vncStopServer(env, thiz);
             return JNI_FALSE;
         }
         theScreen->httpDir = strdup(cHttpRootDir);
@@ -357,7 +357,7 @@ JNIEXPORT jboolean JNICALL Java_net_christianbeier_droidvnc_1ng_MainService_vncS
     if (port != -1) {
         if (theScreen->listenSock == RFB_INVALID_SOCKET || theScreen->listen6Sock == RFB_INVALID_SOCKET) {
             __android_log_print(ANDROID_LOG_ERROR, TAG, "vncStartServer: failed starting (%s)", strerror(errno));
-            Java_net_christianbeier_droidvnc_1ng_MainService_vncStopServer(env, thiz);
+            Java_com_auodplus_satis_fly_MainService_vncStopServer(env, thiz);
             return JNI_FALSE;
         }
     }
@@ -370,7 +370,7 @@ JNIEXPORT jboolean JNICALL Java_net_christianbeier_droidvnc_1ng_MainService_vncS
 }
 
 // The MainService run this on a worker thread, in the worst case blocking for rfbMaxClientWait
-JNIEXPORT jlong JNICALL Java_net_christianbeier_droidvnc_1ng_MainService_vncConnectReverse(JNIEnv *env, __unused jobject thiz, jstring host, jint port)
+JNIEXPORT jlong JNICALL Java_com_auodplus_satis_fly_MainService_vncConnectReverse(JNIEnv *env, __unused jobject thiz, jstring host, jint port)
 {
     if(!theScreen || !theScreen->frameBuffer)
         return 0;
@@ -389,7 +389,7 @@ JNIEXPORT jlong JNICALL Java_net_christianbeier_droidvnc_1ng_MainService_vncConn
 }
 
 // The MainService run this on a worker thread, in the worst case blocking for rfbMaxClientWait
-JNIEXPORT jlong JNICALL Java_net_christianbeier_droidvnc_1ng_MainService_vncConnectRepeater(JNIEnv *env, __unused jobject thiz, jstring host, jint port, jstring repeaterIdentifier)
+JNIEXPORT jlong JNICALL Java_com_auodplus_satis_fly_MainService_vncConnectRepeater(JNIEnv *env, __unused jobject thiz, jstring host, jint port, jstring repeaterIdentifier)
 {
     if(!theScreen || !theScreen->frameBuffer)
         return 0;
@@ -414,7 +414,7 @@ JNIEXPORT jlong JNICALL Java_net_christianbeier_droidvnc_1ng_MainService_vncConn
 }
 
 
-JNIEXPORT jboolean JNICALL Java_net_christianbeier_droidvnc_1ng_MainService_vncNewFramebuffer(__unused JNIEnv *env, __unused jobject thiz, jint width, jint height)
+JNIEXPORT jboolean JNICALL Java_com_auodplus_satis_fly_MainService_vncNewFramebuffer(__unused JNIEnv *env, __unused jobject thiz, jint width, jint height)
 {
     char *oldfb, *newfb;
 
@@ -436,7 +436,7 @@ JNIEXPORT jboolean JNICALL Java_net_christianbeier_droidvnc_1ng_MainService_vncN
     return JNI_TRUE;
 }
 
-JNIEXPORT jboolean JNICALL Java_net_christianbeier_droidvnc_1ng_MainService_vncUpdateFramebuffer(JNIEnv *env, jobject  __unused thiz, jobject buf)
+JNIEXPORT jboolean JNICALL Java_com_auodplus_satis_fly_MainService_vncUpdateFramebuffer(JNIEnv *env, jobject  __unused thiz, jobject buf)
 {
     void *cBuf = (*env)->GetDirectBufferAddress(env, buf);
     jlong bufSize = (*env)->GetDirectBufferCapacity(env, buf);
@@ -456,7 +456,7 @@ JNIEXPORT jboolean JNICALL Java_net_christianbeier_droidvnc_1ng_MainService_vncU
     return JNI_TRUE;
 }
 
-JNIEXPORT jint JNICALL Java_net_christianbeier_droidvnc_1ng_MainService_vncGetFramebufferWidth(__unused JNIEnv *env, jobject __unused thiz)
+JNIEXPORT jint JNICALL Java_com_auodplus_satis_fly_MainService_vncGetFramebufferWidth(__unused JNIEnv *env, jobject __unused thiz)
 {
     if(!theScreen || !theScreen->frameBuffer)
         return -1;
@@ -464,7 +464,7 @@ JNIEXPORT jint JNICALL Java_net_christianbeier_droidvnc_1ng_MainService_vncGetFr
     return theScreen->width;
 }
 
-JNIEXPORT jint JNICALL Java_net_christianbeier_droidvnc_1ng_MainService_vncGetFramebufferHeight(__unused JNIEnv *env, jobject __unused thiz)
+JNIEXPORT jint JNICALL Java_com_auodplus_satis_fly_MainService_vncGetFramebufferHeight(__unused JNIEnv *env, jobject __unused thiz)
 {
     if(!theScreen || !theScreen->frameBuffer)
         return -1;
@@ -472,12 +472,12 @@ JNIEXPORT jint JNICALL Java_net_christianbeier_droidvnc_1ng_MainService_vncGetFr
     return theScreen->height;
 }
 
-JNIEXPORT jboolean JNICALL Java_net_christianbeier_droidvnc_1ng_MainService_vncIsActive(__unused JNIEnv *env, __unused jobject thiz) {
+JNIEXPORT jboolean JNICALL Java_com_auodplus_satis_fly_MainService_vncIsActive(__unused JNIEnv *env, __unused jobject thiz) {
     return theScreen && rfbIsActive(theScreen);
 }
 
 JNIEXPORT void JNICALL
-Java_net_christianbeier_droidvnc_1ng_MainService_vncSendCutText(JNIEnv *env, __unused jclass clazz,
+Java_com_auodplus_satis_fly_MainService_vncSendCutText(JNIEnv *env, __unused jclass clazz,
                                                                 jstring text) {
     if (!theScreen || !text)
         return;
@@ -521,12 +521,12 @@ Java_net_christianbeier_droidvnc_1ng_MainService_vncSendCutText(JNIEnv *env, __u
 }
 
 JNIEXPORT jstring JNICALL
-Java_net_christianbeier_droidvnc_1ng_MainService_vncGetRemoteHost(JNIEnv *env, __unused jobject thiz, jlong client) {
+Java_com_auodplus_satis_fly_MainService_vncGetRemoteHost(JNIEnv *env, __unused jobject thiz, jlong client) {
     return (*env)->NewStringUTF(env, ((rfbClientPtr)client)->host);
 }
 
 JNIEXPORT jboolean JNICALL
-Java_net_christianbeier_droidvnc_1ng_MainService_vncDisconnect(__unused JNIEnv *env, __unused jobject thiz, jlong client) {
+Java_com_auodplus_satis_fly_MainService_vncDisconnect(__unused JNIEnv *env, __unused jobject thiz, jlong client) {
     rfbBool found = FALSE;
     rfbClientIteratorPtr iterator;
     rfbClientPtr cl;
@@ -543,7 +543,7 @@ Java_net_christianbeier_droidvnc_1ng_MainService_vncDisconnect(__unused JNIEnv *
 }
 
 JNIEXPORT jint JNICALL
-Java_net_christianbeier_droidvnc_1ng_MainService_vncGetDestinationPort(__unused JNIEnv *env,
+Java_com_auodplus_satis_fly_MainService_vncGetDestinationPort(__unused JNIEnv *env,
                                                                        __unused jobject thiz,
                                                                        jlong client) {
     int port = -1;
@@ -561,7 +561,7 @@ Java_net_christianbeier_droidvnc_1ng_MainService_vncGetDestinationPort(__unused 
 }
 
 JNIEXPORT jstring JNICALL
-Java_net_christianbeier_droidvnc_1ng_MainService_vncGetRepeaterId(JNIEnv *env,
+Java_com_auodplus_satis_fly_MainService_vncGetRepeaterId(JNIEnv *env,
                                                                   __unused jobject thiz,
                                                                   jlong client) {
     return (*env)->NewStringUTF(env, ((rfbClientPtr)client)->repeaterId);

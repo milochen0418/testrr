@@ -19,7 +19,7 @@
  * 59 Temple Place Suite 330, Boston, MA 02111-1307, USA.
  */
 
-package net.christianbeier.droidvnc_ng;
+package com.auodplus.satis.fly;
 
 import android.annotation.SuppressLint;
 import android.app.AppOpsManager;
@@ -73,35 +73,35 @@ public class MainService extends Service {
 
     private static final String TAG = "MainService";
     static final int NOTIFICATION_ID = 11;
-    public final static String ACTION_START = "net.christianbeier.droidvnc_ng.ACTION_START";
-    public final static String ACTION_STOP = "net.christianbeier.droidvnc_ng.ACTION_STOP";
-    public static final String ACTION_CONNECT_REVERSE = "net.christianbeier.droidvnc_ng.ACTION_CONNECT_REVERSE";
-    public static final String ACTION_CONNECT_REPEATER = "net.christianbeier.droidvnc_ng.ACTION_CONNECT_REPEATER";
-    public static final String EXTRA_REQUEST_ID = "net.christianbeier.droidvnc_ng.EXTRA_REQUEST_ID";
-    public static final String EXTRA_REQUEST_SUCCESS = "net.christianbeier.droidvnc_ng.EXTRA_REQUEST_SUCCESS";
-    public static final String EXTRA_HOST = "net.christianbeier.droidvnc_ng.EXTRA_HOST";
-    public static final String EXTRA_PORT = "net.christianbeier.droidvnc_ng.EXTRA_PORT";
-    public static final String EXTRA_REPEATER_ID = "net.christianbeier.droidvnc_ng.EXTRA_REPEATER_ID";
-    public static final String EXTRA_RECONNECT_TRIES = "net.christianbeier.droidvnc_ng.EXTRA_RECONNECT_TRIES";
-    public static final String EXTRA_ACCESS_KEY = "net.christianbeier.droidvnc_ng.EXTRA_ACCESS_KEY";
-    public static final String EXTRA_PASSWORD = "net.christianbeier.droidvnc_ng.EXTRA_PASSWORD";
-    public static final String EXTRA_VIEW_ONLY = "net.christianbeier.droidvnc_ng.EXTRA_VIEW_ONLY";
-    public static final String EXTRA_SHOW_POINTERS = "net.christianbeier.droidvnc_ng.EXTRA_SHOW_POINTERS";
-    public static final String EXTRA_SCALING = "net.christianbeier.droidvnc_ng.EXTRA_SCALING";
+    public final static String ACTION_START = "com.auodplus.satis.fly.ACTION_START";
+    public final static String ACTION_STOP = "com.auodplus.satis.fly.ACTION_STOP";
+    public static final String ACTION_CONNECT_REVERSE = "com.auodplus.satis.fly.ACTION_CONNECT_REVERSE";
+    public static final String ACTION_CONNECT_REPEATER = "com.auodplus.satis.fly.ACTION_CONNECT_REPEATER";
+    public static final String EXTRA_REQUEST_ID = "com.auodplus.satis.fly.EXTRA_REQUEST_ID";
+    public static final String EXTRA_REQUEST_SUCCESS = "com.auodplus.satis.fly.EXTRA_REQUEST_SUCCESS";
+    public static final String EXTRA_HOST = "com.auodplus.satis.fly.EXTRA_HOST";
+    public static final String EXTRA_PORT = "com.auodplus.satis.fly.EXTRA_PORT";
+    public static final String EXTRA_REPEATER_ID = "com.auodplus.satis.fly.EXTRA_REPEATER_ID";
+    public static final String EXTRA_RECONNECT_TRIES = "com.auodplus.satis.fly.EXTRA_RECONNECT_TRIES";
+    public static final String EXTRA_ACCESS_KEY = "com.auodplus.satis.fly.EXTRA_ACCESS_KEY";
+    public static final String EXTRA_PASSWORD = "com.auodplus.satis.fly.EXTRA_PASSWORD";
+    public static final String EXTRA_VIEW_ONLY = "com.auodplus.satis.fly.EXTRA_VIEW_ONLY";
+    public static final String EXTRA_SHOW_POINTERS = "com.auodplus.satis.fly.EXTRA_SHOW_POINTERS";
+    public static final String EXTRA_SCALING = "com.auodplus.satis.fly.EXTRA_SCALING";
     /**
      * Only used on Android 12 and earlier.
      */
-    public static final String EXTRA_FILE_TRANSFER = "net.christianbeier.droidvnc_ng.EXTRA_FILE_TRANSFER";
+    public static final String EXTRA_FILE_TRANSFER = "com.auodplus.satis.fly.EXTRA_FILE_TRANSFER";
     /**
      * Only used on Android 11 and later.
      */
-    public static final String EXTRA_FALLBACK_SCREEN_CAPTURE = "net.christianbeier.droidvnc_ng.EXTRA_FALLBACK_SCREEN_CAPTURE";
-    public static final String ACTION_GET_CLIENTS = "net.christianbeier.droidvnc_ng.ACTION_GET_CLIENTS";
-    public static final String EXTRA_RECEIVER = "net.christianbeier.droidvnc_ng.EXTRA_RECEIVER";
-    public static final String EXTRA_CLIENTS = "net.christianbeier.droidvnc_ng.EXTRA_CLIENTS";
-    public static final String ACTION_DISCONNECT = "net.christianbeier.droidvnc_ng.ACTION_DISCONNECT";
-    public static final String EXTRA_CLIENT_CONNECTION_ID = "net.christianbeier.droidvnc_ng.EXTRA_CLIENT_CONNECTION_ID";
-    public static final String EXTRA_CLIENT_REQUEST_ID = "net.christianbeier.droidvnc_ng.EXTRA_CLIENT_REQUEST_ID";
+    public static final String EXTRA_FALLBACK_SCREEN_CAPTURE = "com.auodplus.satis.fly.EXTRA_FALLBACK_SCREEN_CAPTURE";
+    public static final String ACTION_GET_CLIENTS = "com.auodplus.satis.fly.ACTION_GET_CLIENTS";
+    public static final String EXTRA_RECEIVER = "com.auodplus.satis.fly.EXTRA_RECEIVER";
+    public static final String EXTRA_CLIENTS = "com.auodplus.satis.fly.EXTRA_CLIENTS";
+    public static final String ACTION_DISCONNECT = "com.auodplus.satis.fly.ACTION_DISCONNECT";
+    public static final String EXTRA_CLIENT_CONNECTION_ID = "com.auodplus.satis.fly.EXTRA_CLIENT_CONNECTION_ID";
+    public static final String EXTRA_CLIENT_REQUEST_ID = "com.auodplus.satis.fly.EXTRA_CLIENT_REQUEST_ID";
 
     final static String ACTION_HANDLE_MEDIA_PROJECTION_REQUEST_RESULT = "action_handle_media_projection_request_result";
     final static String EXTRA_MEDIA_PROJECTION_REQUEST_RESULT_DATA = "result_data_media_projection_request";

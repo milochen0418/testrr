@@ -1,4 +1,4 @@
-package net.christianbeier.droidvnc_ng;
+package com.auodplus.satis.fly;
 
 /*
  * DroidVNC-NG InputService that binds to the Android a11y API and posts input events sent by the native backend to Android.
