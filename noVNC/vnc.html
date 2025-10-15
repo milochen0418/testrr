@@ -41,6 +41,215 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <!-- Android Chrome 專屬優化 -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#6e84a3">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="msapplication-tap-highlight" content="no">
+    <!-- 防止 Android Chrome 自動暫停背景頁面 -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    
+    <!-- Web App Manifest for Android Chrome PWA support - 暫時註解避免 404 錯誤 -->
+    <!-- <link rel="manifest" href="./manifest.json" type="application/manifest+json"> -->
+    
+    <!-- Android Chrome 連線優化 -->
+    <script>
+        // 防止 Android Chrome 初次連線失敗的預處理
+        if (navigator.userAgent.indexOf('Chrome') !== -1 && navigator.userAgent.indexOf('Android') !== -1) {
+            // 設置優化參數
+            window.androidChromeOptimizations = {
+                connectionRetries: 0,
+                maxRetries: 3,
+                retryDelay: 2000,
+                isRetrying: false,
+                pageReady: false,
+                intentionalLeave: false
+            };
+            
+            // 瀏覽器載入行為檢測和分析
+            window.moduleLoadAnalytics = {
+                startTime: Date.now(),
+                userAgent: navigator.userAgent,
+                browser: '',
+                errors: [],
+                warnings: [],
+                loadTimes: {}
+            };
+            
+            // 檢測瀏覽器類型
+            if (navigator.userAgent.indexOf('Chrome') !== -1 && navigator.userAgent.indexOf('Android') !== -1) {
+                window.moduleLoadAnalytics.browser = 'Android Chrome';
+            } else if (navigator.userAgent.indexOf('Safari') !== -1 && navigator.userAgent.indexOf('iPhone') !== -1) {
+                window.moduleLoadAnalytics.browser = 'iOS Safari';
+            } else if (navigator.userAgent.indexOf('Chrome') !== -1) {
+                window.moduleLoadAnalytics.browser = 'Desktop Chrome';
+            } else if (navigator.userAgent.indexOf('Safari') !== -1) {
+                window.moduleLoadAnalytics.browser = 'Desktop Safari';
+            } else {
+                window.moduleLoadAnalytics.browser = 'Other';
+            }
+            
+            console.log('Browser detected:', window.moduleLoadAnalytics.browser);
+            console.log('Network info:', navigator.connection ? {
+                effectiveType: navigator.connection.effectiveType,
+                downlink: navigator.connection.downlink,
+                rtt: navigator.connection.rtt
+            } : 'Not available');
+            
+            // 追蹤模組載入錯誤
+            const originalConsoleError = console.error;
+            console.error = function(...args) {
+                const message = args.join(' ');
+                window.moduleLoadAnalytics.errors.push({
+                    time: Date.now() - window.moduleLoadAnalytics.startTime,
+                    message: message
+                });
+                
+                if (message.includes('ERR_EMPTY_RESPONSE')) {
+                    console.log(`[${window.moduleLoadAnalytics.browser}] ERR_EMPTY_RESPONSE at ${Date.now() - window.moduleLoadAnalytics.startTime}ms`);
+                    console.log('Network state:', navigator.onLine ? 'online' : 'offline');
+                    if (navigator.connection) {
+                        console.log('Connection:', navigator.connection.effectiveType, navigator.connection.downlink + 'Mbps');
+                    }
+                }
+                
+                // 只在非 Android Chrome 或關鍵錯誤時顯示
+                if (window.moduleLoadAnalytics.browser !== 'Android Chrome' || 
+                    (!message.includes('localization.js') && 
+                     !message.includes('.svg') && 
+                     !message.includes('manifest.json'))) {
+                    originalConsoleError.apply(console, args);
+                }
+            };
+            
+            console.warn = function(...args) {
+                const message = args.join(' ');
+                window.moduleLoadAnalytics.warnings.push({
+                    time: Date.now() - window.moduleLoadAnalytics.startTime,
+                    message: message
+                });
+                
+                if (message.includes('Slow network is detected') || 
+                    message.includes('Resource loading failed')) {
+                    console.log(`[${window.moduleLoadAnalytics.browser}] ${message}`);
+                    return;
+                }
+                originalWarn.apply(console, args);
+            };
+            
+            // 載入完成後顯示統計
+            window.addEventListener('load', function() {
+                const loadTime = Date.now() - window.moduleLoadAnalytics.startTime;
+                console.log(`[${window.moduleLoadAnalytics.browser}] Page load completed in ${loadTime}ms`);
+                console.log('Errors during load:', window.moduleLoadAnalytics.errors.length);
+                console.log('Warnings during load:', window.moduleLoadAnalytics.warnings.length);
+                
+                if (window.moduleLoadAnalytics.errors.length > 0) {
+                    console.log('Error breakdown:', window.moduleLoadAnalytics.errors);
+                }
+            });
+            
+            // 防止頁面重新整理對話框
+            window.addEventListener('beforeunload', function(e) {
+                // 只在非主動離開時阻止
+                if (!window.androidChromeOptimizations.intentionalLeave) {
+                    e.preventDefault();
+                    e.returnValue = '';
+                    return '';
+                }
+            });
+            
+            // 防止錯誤導致的頁面重新整理
+            window.addEventListener('error', function(e) {
+                console.log('Global error caught:', e.error || e.message);
+                
+                // 處理資源載入錯誤
+                if (e.target && (e.target.tagName === 'SCRIPT' || e.target.tagName === 'LINK')) {
+                    console.warn('Resource loading failed:', e.target.src || e.target.href);
+                    e.preventDefault(); // 防止錯誤傳播
+                    return false;
+                }
+                
+                // 處理網路相關錯誤
+                if (e.message && (
+                    e.message.includes('ERR_EMPTY_RESPONSE') ||
+                    e.message.includes('ERR_NETWORK') ||
+                    e.message.includes('ERR_INTERNET_DISCONNECTED') ||
+                    e.message.includes('Failed to fetch') ||
+                    e.message.includes('NetworkError')
+                )) {
+                    console.warn('Network error caught and suppressed:', e.message);
+                    e.preventDefault();
+                    return false;
+                }
+                
+                if (e.error && e.error.message && e.error.message.includes('WebSocket')) {
+                    e.preventDefault();
+                    console.log('WebSocket error prevented page reload');
+                    
+                    // 觸發重試機制而不是重新整理
+                    if (window.androidChromeOptimizations) {
+                        window.androidChromeOptimizations.connectionRetries++;
+                        if (window.androidChromeOptimizations.connectionRetries <= window.androidChromeOptimizations.maxRetries) {
+                            setTimeout(() => {
+                                if (window.UI && typeof window.UI.connect === 'function') {
+                                    window.UI.connect();
+                                } else {
+                                    location.reload();
+                                }
+                            }, window.androidChromeOptimizations.retryDelay);
+                        }
+                    }
+                }
+            });
+            
+            // 監控未捕獲的 Promise 拒絕
+            window.addEventListener('unhandledrejection', function(e) {
+                console.log('Unhandled promise rejection:', e.reason);
+                if (e.reason && (e.reason.includes('WebSocket') || e.reason.includes('network'))) {
+                    e.preventDefault();
+                    console.log('Network-related promise rejection handled');
+                }
+            });
+            
+            // 添加網路延遲檢測 - 改用更簡單的方法
+            window.networkLatencyTest = function() {
+                const start = Date.now();
+                // 使用當前頁面作為測試目標，避免 404 錯誤
+                fetch(window.location.href, {
+                    method: 'HEAD', 
+                    cache: 'no-cache',
+                    mode: 'no-cors' // 避免 CORS 問題
+                })
+                    .then(response => {
+                        const latency = Date.now() - start;
+                        console.log('Network latency:', latency + 'ms');
+                        if (latency > 3000) {
+                            console.warn('High network latency detected, adjusting connection timeout');
+                            // 增加重試延遲
+                            if (window.androidChromeOptimizations) {
+                                window.androidChromeOptimizations.retryDelay = Math.max(5000, latency);
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.warn('Network test failed, using conservative settings:', error);
+                        // 如果網路測試失敗，使用保守設定
+                        if (window.androidChromeOptimizations) {
+                            window.androidChromeOptimizations.retryDelay = 10000; // 10秒延遲
+                            window.androidChromeOptimizations.maxRetries = 5; // 增加重試次數
+                        }
+                    });
+            };
+            
+            // 執行網路測試 - 延遲執行避免載入衝突
+            setTimeout(window.networkLatencyTest, 2000);
+        }
+    </script>
+    
     <!-- Home Screen Icons (favourites and bookmarks use the normal icons) -->
     <link rel="apple-touch-icon" sizes="60x60" type="image/png" href="app/images/icons/novnc-60x60.png">
     <link rel="apple-touch-icon" sizes="76x76" type="image/png" href="app/images/icons/novnc-76x76.png">
@@ -50,13 +259,131 @@
     <!-- Stylesheets -->
     <link rel="stylesheet" href="app/styles/base.css">
 
-    <!-- Images that will later appear via CSS -->
-    <link rel="preload" as="image" href="app/images/info.svg">
-    <link rel="preload" as="image" href="app/images/error.svg">
-    <link rel="preload" as="image" href="app/images/warning.svg">
+    <!-- Images that will later appear via CSS - 移除 preload 以避免 Android Chrome 警告 -->
+    <!-- 這些圖片會在需要時通過 CSS 載入 -->
 
     <script src="app/error-handler.js"></script>
-    <script type="module" crossorigin="anonymous" src="app/ui.js"></script>
+    
+    <!-- Android Chrome 初始化優化腳本 -->
+    <script>
+        if (navigator.userAgent.indexOf('Chrome') !== -1 && navigator.userAgent.indexOf('Android') !== -1) {
+            console.log('Android Chrome detected, initializing optimizations');
+            
+            // 監控資源載入錯誤
+            window.addEventListener('error', function(e) {
+                if (e.target && (e.target.tagName === 'SCRIPT' || e.target.tagName === 'LINK')) {
+                    console.warn('Resource loading failed:', e.target.src || e.target.href);
+                    
+                    // 忽略某些非關鍵資源的錯誤
+                    const src = e.target.src || e.target.href || '';
+                    if (src.includes('manifest.json') || 
+                        src.includes('Orbitron') || 
+                        src.includes('.woff') || 
+                        src.includes('.ttf') ||
+                        src.includes('.svg') ||
+                        src.includes('localization.js') ||
+                        src.includes('toggleextrakeys') ||
+                        src.includes('/images/') ||
+                        src.includes('/sounds/')) {
+                        console.log('Non-critical resource failed, continuing...', src);
+                        e.preventDefault();
+                        return false;
+                    }
+                    
+                    // 如果是關鍵 JavaScript 模組載入失敗，嘗試重新載入
+                    if (e.target.tagName === 'SCRIPT' && src.includes('ui.js')) {
+                        console.log('Critical script failed, attempting reload in 3 seconds...');
+                        setTimeout(() => {
+                            if (typeof window.UI === 'undefined') {
+                                console.log('UI still not loaded, reloading page...');
+                                location.reload();
+                            }
+                        }, 3000);
+                    }
+                }
+            }, true);
+            
+            // 設置更長的超時時間
+            if (window.WebSocket) {
+                const originalWebSocket = window.WebSocket;
+                window.WebSocket = function(url, protocols) {
+                    const ws = new originalWebSocket(url, protocols);
+                    const originalTimeout = ws.timeout || 5000;
+                    ws.timeout = originalTimeout * 2; // 雙倍超時時間
+                    
+                    // 添加額外的錯誤處理
+                    const originalOnError = ws.onerror;
+                    ws.onerror = function(error) {
+                        console.log('WebSocket error in Android Chrome:', error);
+                        if (originalOnError) {
+                            originalOnError.call(this, error);
+                        }
+                    };
+                    
+                    return ws;
+                };
+            }
+            
+            // 延遲自動連線以確保頁面完全載入
+            document.addEventListener('DOMContentLoaded', function() {
+                setTimeout(function() {
+                    console.log('Android Chrome: Page fully loaded, ready for connections');
+                    if (window.androidChromeOptimizations) {
+                        window.androidChromeOptimizations.pageReady = true;
+                    }
+                    
+                    // 檢查關鍵模組是否載入
+                    setTimeout(() => {
+                        if (typeof window.UI === 'undefined') {
+                            console.warn('UI module not loaded, possible script loading issue');
+                            // 嘗試手動重新載入 - 使用更長的延遲
+                            setTimeout(() => {
+                                const script = document.createElement('script');
+                                script.type = 'module';
+                                script.crossOrigin = 'anonymous';
+                                script.src = 'app/ui.js?retry=' + Date.now(); // 添加時間戳避免快取
+                                script.onerror = () => {
+                                    console.error('Failed to reload UI module, page may need manual refresh');
+                                };
+                                document.head.appendChild(script);
+                            }, 2000);
+                        } else {
+                            console.log('UI module loaded successfully');
+                        }
+                    }, 5000); // 增加等待時間
+                }, 1000);
+            });
+        }
+    </script>
+    
+    <script type="module" crossorigin="anonymous" src="app/ui.js" onerror="handleModuleError(event)"></script>
+    
+    <!-- 模組載入錯誤處理 -->
+    <script>
+        function handleModuleError(event) {
+            console.warn('Module loading error:', event);
+            // 延遲重試載入
+            setTimeout(() => {
+                if (typeof window.UI === 'undefined') {
+                    console.log('Retrying module load...');
+                    const script = document.createElement('script');
+                    script.type = 'module';
+                    script.crossOrigin = 'anonymous';
+                    script.src = 'app/ui.js';
+                    document.head.appendChild(script);
+                }
+            }, 3000);
+        }
+        
+        // 全域模組載入錯誤處理
+        window.addEventListener('error', function(e) {
+            if (e.message && e.message.includes('Failed to resolve module specifier')) {
+                console.warn('Module resolution error:', e.message);
+                e.preventDefault();
+                return false;
+            }
+        });
+    </script>
 </head>
 
 <body>

@@ -40,6 +40,12 @@ const UI = {
     inhibitReconnect: true,
     reconnectCallback: null,
     reconnectPassword: null,
+    
+    // Android Chrome 檢測函數
+    isAndroidChrome() {
+        return navigator.userAgent.indexOf('Chrome') !== -1 && 
+               navigator.userAgent.indexOf('Android') !== -1;
+    },
 
     prime() {
         return WebUtil.initSettings().then(() => {
@@ -85,6 +91,9 @@ const UI = {
             setTimeout(() => window.scrollTo(0, 1), 100);
         }
 
+        // Android Chrome 專屬優化 - 添加背景執行保護
+        UI.addAndroidChromeOptimizations();
+
         // Restore control bar position
         if (WebUtil.readSetting('controlbar_pos') === 'right') {
             UI.toggleControlbarSide();
@@ -115,7 +124,22 @@ const UI = {
         let autoconnect = WebUtil.getConfigVar('autoconnect', false);
         if (autoconnect === 'true' || autoconnect == '1') {
             autoconnect = true;
-            UI.connect();
+            
+            // Android Chrome 專屬：延遲自動連線
+            if (UI.isAndroidChrome()) {
+                Log.Info("Android Chrome detected, delaying autoconnect for stability");
+                setTimeout(() => {
+                    // 確保頁面完全準備好
+                    if (window.androidChromeOptimizations && window.androidChromeOptimizations.pageReady) {
+                        UI.connect();
+                    } else {
+                        // 如果頁面還沒準備好，再等一下
+                        setTimeout(() => UI.connect(), 2000);
+                    }
+                }, 1500);
+            } else {
+                UI.connect();
+            }
         } else {
             autoconnect = false;
             // Show the connect panel on first load unless autoconnecting
@@ -988,6 +1012,14 @@ const UI = {
         if (typeof UI.rfb !== 'undefined') {
             return;
         }
+        
+        // Android Chrome 專屬：檢查是否為重試連線
+        if (UI.isAndroidChrome() && window.androidChromeOptimizations) {
+            if (window.androidChromeOptimizations.isRetrying) {
+                Log.Info("Android Chrome retry connection attempt " + 
+                        (window.androidChromeOptimizations.connectionRetries + 1));
+            }
+        }
 
         const host = UI.getSetting('host');
         const port = UI.getSetting('port');
@@ -1044,9 +1076,19 @@ const UI = {
         UI.rfb.showDotCursor = UI.getSetting('show_dot');
 
         UI.updateViewOnly(); // requires UI.rfb
+        
+        // Android Chrome 專屬：啟動連線監控
+        if (UI.isAndroidChrome()) {
+            UI.connectionHealthCheck = setInterval(UI.checkConnectionHealth, 60000); // 每分鐘檢查一次
+        }
     },
 
     disconnect() {
+        // Android Chrome 專屬：標記為主動離開
+        if (UI.isAndroidChrome() && window.androidChromeOptimizations) {
+            window.androidChromeOptimizations.intentionalLeave = true;
+        }
+        
         UI.rfb.disconnect();
 
         UI.connected = false;
@@ -1055,6 +1097,13 @@ const UI = {
         UI.inhibitReconnect = true;
 
         UI.updateVisualState('disconnecting');
+        
+        // Android Chrome 專屬：清理監控定時器
+        UI.stopWebSocketKeepalive();
+        if (UI.connectionHealthCheck) {
+            clearInterval(UI.connectionHealthCheck);
+            UI.connectionHealthCheck = null;
+        }
 
         // Don't display the connection settings until we're actually disconnected
     },
@@ -1085,6 +1134,13 @@ const UI = {
     connectFinished(e) {
         UI.connected = true;
         UI.inhibitReconnect = false;
+        
+        // Android Chrome 專屬：成功連線後重置重試計數器
+        if (UI.isAndroidChrome() && window.androidChromeOptimizations) {
+            window.androidChromeOptimizations.connectionRetries = 0;
+            window.androidChromeOptimizations.isRetrying = false;
+            window.androidChromeOptimizations.intentionalLeave = false;
+        }
 
         let msg;
         if (UI.getSetting('encrypt')) {
@@ -1111,6 +1167,41 @@ const UI = {
         UI.rfb = undefined;
 
         if (!e.detail.clean) {
+            // Android Chrome 專屬：初次連線失敗重試邏輯
+            if (UI.isAndroidChrome() && !wasConnected && window.androidChromeOptimizations) {
+                const retryConfig = window.androidChromeOptimizations;
+                
+                if (retryConfig.connectionRetries < retryConfig.maxRetries && !retryConfig.isRetrying) {
+                    retryConfig.connectionRetries++;
+                    retryConfig.isRetrying = true;
+                    
+                    // 根據網路狀況調整重試延遲
+                    let retryDelay = retryConfig.retryDelay;
+                    if ('connection' in navigator && navigator.connection) {
+                        const effectiveType = navigator.connection.effectiveType;
+                        if (effectiveType === 'slow-2g' || effectiveType === '2g') {
+                            retryDelay = Math.max(retryDelay, 20000); // 慢網路等更久
+                        }
+                    }
+                    
+                    Log.Info(`Android Chrome connection failed, retrying (${retryConfig.connectionRetries}/${retryConfig.maxRetries}) in ${retryDelay}ms`);
+                    
+                    UI.showStatus(_("Connection failed, retrying...") + ` (${retryConfig.connectionRetries}/${retryConfig.maxRetries})`, 'warning');
+                    
+                    setTimeout(() => {
+                        retryConfig.isRetrying = false;
+                        UI.connect();
+                    }, retryDelay);
+                    
+                    return; // 不顯示錯誤，直接重試
+                } else {
+                    // 達到最大重試次數，重置計數器
+                    retryConfig.connectionRetries = 0;
+                    retryConfig.isRetrying = false;
+                    Log.Warn("Max retry attempts reached for Android Chrome");
+                }
+            }
+            
             UI.updateVisualState('disconnected');
             if (wasConnected) {
                 UI.showStatus(_("Something went wrong, connection is closed"),
@@ -1686,6 +1777,168 @@ const UI = {
         optn.text = text;
         optn.value = value;
         selectbox.options.add(optn);
+    },
+
+    // Android Chrome 專屬優化
+    addAndroidChromeOptimizations() {
+        if (!UI.isAndroidChrome()) return;
+        
+        Log.Info("Detected Android Chrome, applying optimizations");
+        
+        // 檢測慢網路並調整設定
+        if ('connection' in navigator && navigator.connection) {
+            const connection = navigator.connection;
+            const effectiveType = connection.effectiveType;
+            
+            if (effectiveType === 'slow-2g' || effectiveType === '2g') {
+                Log.Info("Slow network detected, applying conservative settings");
+                // 慢網路設定
+                window.androidChromeOptimizations.retryDelay = 15000; // 15秒
+                window.androidChromeOptimizations.maxRetries = 2; // 減少重試次數
+            } else if (effectiveType === '3g') {
+                Log.Info("3G network detected, applying moderate settings");
+                window.androidChromeOptimizations.retryDelay = 8000; // 8秒
+                window.androidChromeOptimizations.maxRetries = 3;
+            }
+            
+            Log.Info(`Network: ${effectiveType}, downlink: ${connection.downlink || 'unknown'}Mbps`);
+        }
+        
+        // 1. Page Visibility API - 防止背景暫停
+        document.addEventListener('visibilitychange', UI.handleVisibilityChange);
+        
+        // 2. WebSocket 保活機制
+        UI.websocketKeepalive = null;
+        
+        // 3. 防止記憶體洩漏的連線狀態檢查
+        UI.connectionHealthCheck = null;
+        
+        // 4. 添加 Android 專屬的觸控事件處理
+        UI.addAndroidTouchOptimizations();
+        
+        // 5. 網路狀態監控
+        if ('connection' in navigator) {
+            navigator.connection.addEventListener('change', UI.handleNetworkChange);
+        }
+        
+        // 6. 電池狀態監控（如果支援）
+        if ('getBattery' in navigator) {
+            navigator.getBattery().then(battery => {
+                battery.addEventListener('chargingchange', UI.handleBatteryChange);
+                battery.addEventListener('levelchange', UI.handleBatteryChange);
+            });
+        }
+    },
+
+    handleVisibilityChange() {
+        if (document.hidden) {
+            Log.Info("Page hidden - starting keepalive");
+            // 頁面隱藏時啟動保活機制
+            if (UI.rfb && UI.connected) {
+                UI.startWebSocketKeepalive();
+            }
+        } else {
+            Log.Info("Page visible - stopping keepalive");
+            // 頁面可見時停止保活機制
+            UI.stopWebSocketKeepalive();
+            // 檢查連線狀態
+            if (UI.rfb) {
+                UI.checkConnectionHealth();
+            }
+        }
+    },
+
+    startWebSocketKeepalive() {
+        if (UI.websocketKeepalive) return;
+        
+        UI.websocketKeepalive = setInterval(() => {
+            if (UI.rfb && UI.connected) {
+                try {
+                    // 發送心跳包保持連線
+                    UI.rfb._sock.flush();
+                } catch (e) {
+                    Log.Warn("Keepalive failed: " + e);
+                    UI.checkConnectionHealth();
+                }
+            }
+        }, 30000); // 每30秒發送一次
+    },
+
+    stopWebSocketKeepalive() {
+        if (UI.websocketKeepalive) {
+            clearInterval(UI.websocketKeepalive);
+            UI.websocketKeepalive = null;
+        }
+    },
+
+    checkConnectionHealth() {
+        if (!UI.rfb || !UI.connected) return;
+        
+        const wsState = UI.rfb._sock.readyState;
+        if (wsState !== 'open') {
+            Log.Warn("Connection health check failed, attempting reconnect");
+            if (UI.getSetting('reconnect')) {
+                UI.disconnect();
+                setTimeout(() => {
+                    if (!UI.connected) {
+                        UI.reconnect();
+                    }
+                }, 1000);
+            }
+        }
+    },
+
+    handleNetworkChange() {
+        if ('connection' in navigator) {
+            const connection = navigator.connection;
+            Log.Info(`Network changed: ${connection.effectiveType}, downlink: ${connection.downlink}`);
+            
+            // 網路狀態變化時檢查連線
+            if (UI.rfb && UI.connected) {
+                setTimeout(UI.checkConnectionHealth, 2000);
+            }
+        }
+    },
+
+    handleBatteryChange(e) {
+        const battery = e.target;
+        // 低電量時降低更新頻率
+        if (battery.level < 0.2 && !battery.charging) {
+            Log.Info("Low battery detected, optimizing performance");
+            if (UI.rfb) {
+                // 可以調整品質設定或更新頻率
+                UI.rfb.qualityLevel = Math.max(0, UI.rfb.qualityLevel - 2);
+            }
+        }
+    },
+
+    addAndroidTouchOptimizations() {
+        // 防止 Android Chrome 的觸控事件衝突
+        const container = document.getElementById('noVNC_container');
+        if (container) {
+            // 防止雙擊縮放
+            let lastTouchEnd = 0;
+            container.addEventListener('touchend', function (event) {
+                const now = (new Date()).getTime();
+                if (now - lastTouchEnd <= 300) {
+                    event.preventDefault();
+                }
+                lastTouchEnd = now;
+            }, false);
+            
+            // 防止長按選單
+            container.addEventListener('contextmenu', function (event) {
+                event.preventDefault();
+                return false;
+            }, false);
+            
+            // 優化觸控滾動
+            container.addEventListener('touchstart', function (event) {
+                if (event.touches.length > 1) {
+                    event.preventDefault(); // 防止多指手勢
+                }
+            }, { passive: false });
+        }
     },
 
 /* ------^-------
